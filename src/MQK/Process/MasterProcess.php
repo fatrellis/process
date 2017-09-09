@@ -52,6 +52,11 @@ class MasterProcess
     protected $workerClass;
 
     /**
+     * @var boolean
+     */
+    protected $burst = false;
+
+    /**
      * 信号和信号执行方法的映射
      *
      * @var array
@@ -65,10 +70,11 @@ class MasterProcess
         SIGQUIT => 'signalQuitHandle'
     ];
 
-    public function __construct($workerClass, $processes = 5)
+    public function __construct($workerClass, $processes = 5, $burst = false)
     {
         $this->workerClass = $workerClass;
         $this->processes = $processes;
+        $this->burst = $burst;
     }
 
     /**
@@ -130,9 +136,14 @@ class MasterProcess
         if ($this->quiting)
             echo "Application quiting in signal child\n";
         $this->reap();
-        if (!$this->quiting) {
+        if (!$this->quiting && !$this->burst) {
             echo "spawn worker\n";
             $this->spawn();
+        }
+
+        if ($this->burst && empty($this->workers)) {
+            
+            exit(0);
         }
     }
 
@@ -402,4 +413,15 @@ class MasterProcess
             // $this->logger->error("{$signalAction} process failure {$worker->id()}");
         }
     }
+
+    public function burst()
+    {
+        return $this->burst;
+    }
+
+    public function setBurst($burst)
+    {
+        $this->burst = $burst;
+    }
+
 }
