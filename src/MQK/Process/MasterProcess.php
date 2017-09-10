@@ -416,10 +416,9 @@ class MasterProcess
      */
     protected function kill($pid, $signal)
     {
-        echo "{$signal} process {$pid}\n";
-        // $this->logger->info("{$signalAction} process {$worker->id()}");
+        $this->logger->info("{$signal} process {$pid}");
         if (!posix_kill($pid, $signal)) {
-            // $this->logger->error("{$signalAction} process failure {$worker->id()}");
+             $this->logger->error("{$signal} process failure {$pid}");
         }
     }
 
