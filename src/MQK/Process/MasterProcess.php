@@ -142,7 +142,7 @@ class MasterProcess
         }
 
         if ($this->burst && empty($this->workers)) {
-            
+
             exit(0);
         }
     }
