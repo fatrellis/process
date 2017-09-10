@@ -2,6 +2,8 @@
 namespace MQK\Process;
 
 
+use Monolog\Logger;
+
 class MasterProcess
 {
     /**
@@ -57,6 +59,11 @@ class MasterProcess
     protected $burst = false;
 
     /**
+     * @var Logger
+     */
+    protected $logger;
+
+    /**
      * 信号和信号执行方法的映射
      *
      * @var array
@@ -70,11 +77,14 @@ class MasterProcess
         SIGQUIT => 'signalQuitHandle'
     ];
 
-    public function __construct($workerClass, $processes = 5, $burst = false)
+    public function __construct($workerClass, $processes = 5, $burst = false, Logger $logger = null)
     {
         $this->workerClass = $workerClass;
         $this->processes = $processes;
         $this->burst = $burst;
+        if (null == $logger)
+            $logger = new Logger(__CLASS__);
+        $this->logger = $logger;
     }
 
     /**
@@ -85,7 +95,7 @@ class MasterProcess
     public function run()
     {
         $pid = getmypid();
-        echo "Master process {$pid}\n";
+        $this->logger->info("Master process {$pid}");
         $this->spawn();
 
         $this->pipe = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
@@ -120,7 +130,7 @@ class MasterProcess
      */
     function signalHandle($signo)
     {
-        echo "Signal {$this->signalMappingToMethod[$signo]}\n";
+        $this->logger->info("Signal {$this->signalMappingToMethod[$signo]}\n");
         $this->signals[] = $signo;
 //        fwrite($this->pipe[0], '.');
     }
@@ -132,17 +142,16 @@ class MasterProcess
      */
     function signalChildHandle()
     {
-        echo "Signal child handle\n";
-        if ($this->quiting)
-            echo "Application quiting in signal child\n";
+        $this->logger->debug("Signal child handle");
+
         $this->reap();
         if (!$this->quiting && !$this->burst) {
-            echo "spawn worker\n";
+            $this->logger->debug("spawn worker");
             $this->spawn();
         }
 
         if ($this->burst && empty($this->workers)) {
-
+            $this->logger->info("Master process exit");
             exit(0);
         }
     }
@@ -156,9 +165,9 @@ class MasterProcess
      */
     function signalTerminalHandle()
     {
-        echo "Signal terminal\n";
+        $this->logger->debug("Signal terminal");
         if ($this->forceQuit) {
-            echo "Force quit\n";
+            $this->logger->info("Force quit");
             $this->stop(false);
         } else {
             $this->forceQuit = true;
@@ -220,7 +229,7 @@ class MasterProcess
     function dispatch_signals()
     {
         $signalsExported = join(" ", $this->signals);
-        echo "dispatch signals $signalsExported\n";
+        $this->logger->debug("dispatch signals $signalsExported");
         while ($signalNumber = array_shift($this->signals)) {
             $handleFunction = $this->signalMappingToMethod[$signalNumber];
             call_user_func([&$this, $handleFunction], [$signalNumber]);
@@ -239,11 +248,11 @@ class MasterProcess
             if (-1 == $pid) {
                 break;
             } else if ($pid > 0) {
-                echo "Reaped process {$pid}\n";
+                $this->logger->debug("Reaped process {$pid}");
                 $this->removeWorkerById($pid);
                 continue;
             }
-            echo "waitpid return pid is 0\n";
+            $this->logger->debug("waitpid return pid is 0");
             break;
         }
     }
@@ -256,7 +265,7 @@ class MasterProcess
     public function spawn()
     {
         $needToStart = $this->processes - count($this->workers);
-        echo "will start {$needToStart} process\n";
+        $this->logger->info("will start {$needToStart} process");
         for ($i = 0; $i < $needToStart; $i++) {
             $this->spawnWorker();
         }
@@ -329,7 +338,7 @@ class MasterProcess
      */
     function removeWorkerById($id)
     {
-        echo "Remove worker by id is $id\n";
+        $this->logger->debug("Remove worker by id is $id");
         $found = -1;
         foreach ($this->workers as $i => $worker) {
             if ($worker->id() == $id) {
@@ -340,7 +349,7 @@ class MasterProcess
 
         if ($found > -1) {
             $worker = $this->workers[$found];
-            echo "Removed worker by id is {$worker->id()}\n";
+            $this->logger->debug("Removed worker by id is {$worker->id()}");
 
             unset($this->workers[$found]);
         }
@@ -355,9 +364,9 @@ class MasterProcess
     public function stop($graceful = false)
     {
         if ($graceful)
-            echo "application graceful quit\n";
+            $this->logger->info("application graceful quit");
         else
-            echo "application quit";
+            $this->logger->info("application quit");
         $this->quiting = true;
         $signal = $graceful ? SIGTERM : SIGQUIT;
         $limit = time() + 10;
