@@ -126,13 +126,35 @@ class MasterProcess
             $e = [];
 
             try {
+                $this->willSelect();
                 $this->select($r, $w, $e, $this->selectTimeout);
+                $this->didSelect();
             } catch (\Exception $e) {
                 $this->logger->error($e->getMessage());
                 $this->dispatch_signals();
             }
         }
     }
+
+    /**
+     * Select 之前调用
+     * @return void
+     */
+    protected function willSelect()
+    {
+
+    }
+
+    /**
+     * Select 之后调用
+     *
+     * 可以在 willSelect 或者 didSelect 方法内扩展子进程的逻辑。如健康检查或者一些需要心跳的事情。
+     */
+    protected function didSelect()
+    {
+
+    }
+
 
     /**
      * 默认信号处理器
