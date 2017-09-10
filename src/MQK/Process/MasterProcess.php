@@ -49,9 +49,9 @@ class MasterProcess
     protected $processes = 5;
 
     /**
-     * @var string
+     * @var mixed
      */
-    protected $workerClass;
+    protected $workerClassOrFactory;
 
     /**
      * @var boolean
@@ -89,9 +89,9 @@ class MasterProcess
         SIGQUIT => 'signalQuitHandle'
     ];
 
-    public function __construct($workerClass, $processes = 5, $burst = false, Logger $logger = null)
+    public function __construct($workerClassOrFactory, $processes = 5, $burst = false, Logger $logger = null)
     {
-        $this->workerClass = $workerClass;
+        $this->workerClassOrFactory = $workerClassOrFactory;
         $this->processes = $processes;
         $this->burst = $burst;
         if (null == $logger)
@@ -314,7 +314,10 @@ class MasterProcess
      */
     public function spawnWorker()
     {
-        $worker = new $this->workerClass();
+        if ($this->workerClassOrFactory instanceof WorkerFactory) {
+            $worker = $this->workerClassOrFactory->create();
+        } else
+            $worker = new $this->workerClassOrFactory();
         $worker->start();
         $this->workers[] = $worker;
     }
