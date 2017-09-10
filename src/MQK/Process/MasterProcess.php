@@ -64,6 +64,18 @@ class MasterProcess
     protected $logger;
 
     /**
+     * select 的超时时间，单位是微妙
+     * @var int
+     */
+    protected $selectTimeout = 500000;
+
+    /**
+     *
+     * @var array
+     */
+    protected $fileDescriptors = [];
+
+    /**
      * 信号和信号执行方法的映射
      *
      * @var array
@@ -106,15 +118,17 @@ class MasterProcess
         foreach (array_keys($this->signalMappingToMethod) as $signal)
             pcntl_signal($signal, array(&$this, "signalHandle"));
 
+        $watchFileDescriptors = $this->fileDescriptors;
+        $watchFileDescriptors[] = $this->pipe[1];
         while (true) {
-            $r = [$this->pipe[1]];
+            $r = $watchFileDescriptors;
             $w = [];
             $e = [];
 
             try {
-                $this->select($r, $w, $e, 1.0);
+                $this->select($r, $w, $e, $this->selectTimeout);
             } catch (\Exception $e) {
-                echo $e->getMessage() . "\n";
+                $this->logger->error($e->getMessage());
                 $this->dispatch_signals();
             }
         }
@@ -297,12 +311,12 @@ class MasterProcess
         }
     }
 
-    public function select($r, $w, $e, $t)
+    public function select($r, $w, $e, $timeout)
     {
         set_error_handler(array(&$this, "error_handler"));
 
         try {
-            $nums = stream_select($r, $w, $e, $t);
+            stream_select($r, $w, $e, 0, $timeout);
         } catch (\Exception $e) {
             pcntl_signal_dispatch();
             throw $e;
