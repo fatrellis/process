@@ -46,7 +46,6 @@ abstract class AbstractWorker
      */
     public function run()
     {
-        echo "Process {$this->id} got terminal signal\n";
     }
 
     /**
