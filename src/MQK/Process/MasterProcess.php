@@ -76,6 +76,11 @@ class MasterProcess
     protected $fileDescriptors = [];
 
     /**
+     * @var int
+     */
+    protected $createdAt;
+
+    /**
      * 信号和信号执行方法的映射
      *
      * @var array
@@ -106,6 +111,7 @@ class MasterProcess
      */
     public function run()
     {
+        $this->createdAt = time();
         $pid = getmypid();
         $this->logger->info("Master process {$pid}");
         $this->spawn();

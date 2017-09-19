@@ -16,6 +16,11 @@ abstract class AbstractWorker
     protected $alive = true;
 
     /**
+     * @var int
+     */
+    protected $createdAt = 0;
+
+    /**
      * 启动进程
      * @return int pid
      */
@@ -33,6 +38,7 @@ abstract class AbstractWorker
         pcntl_signal(SIGTERM, array(&$this, "signalTerminalHandle"));
 //        pcntl_signal(SIGUSR1, array(&$this, "signalUsr1Handler"));
         $this->id = posix_getpid();
+        $this->createdAt = time();
 
         // TODO: 进程退出后通知
         $this->run();
@@ -73,6 +79,7 @@ abstract class AbstractWorker
         $pid = getmypid();
         echo "Process {$pid} got terminal signal\n";
         $this->alive = false;
+
     }
 
     /**
@@ -80,7 +87,6 @@ abstract class AbstractWorker
      */
     protected function willTerminalProcess()
     {
-
     }
 
     protected function willQuitProcess()
@@ -93,4 +99,12 @@ abstract class AbstractWorker
         return $this->id;
     }
 
+    /**
+     * 阻塞直到子进程退出
+     */
+    public function join()
+    {
+        $status = null;
+        pcntl_waitpid($this->id, $status);
+    }
 }
