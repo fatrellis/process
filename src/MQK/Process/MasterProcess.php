@@ -309,14 +309,17 @@ class MasterProcess
         $needToStart = $this->processes - count($this->workers);
         $this->logger->info("will start {$needToStart} process");
         for ($i = 0; $i < $needToStart; $i++) {
-            $this->spawnWorker();
+            $worker = $this->spawnWorker();
+            $this->didSpawnWorker($worker, $i);
+            $worker->start();
+            $this->workers[] = $worker;
         }
     }
 
     /**
      * 启动一个新进程
      *
-     * @return void
+     * @return AbstractWorker
      */
     public function spawnWorker()
     {
@@ -324,8 +327,12 @@ class MasterProcess
             $worker = $this->workerClassOrFactory->create();
         } else
             $worker = new $this->workerClassOrFactory();
-        $worker->start();
-        $this->workers[] = $worker;
+        return $worker;
+    }
+
+    protected function didSpawnWorker(AbstractWorker $worker, $index)
+    {
+
     }
 
     /**
