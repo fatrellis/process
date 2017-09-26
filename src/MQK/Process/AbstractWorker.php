@@ -1,7 +1,7 @@
 <?php
 namespace MQK\Process;
 
-abstract class AbstractWorker
+abstract class AbstractWorker implements Worker
 {
     /**
      * 进程ID

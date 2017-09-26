@@ -4,7 +4,7 @@ namespace MQK\Process;
 
 use Monolog\Logger;
 
-class MasterProcess
+class MasterProcess implements Master
 {
     /**
      * self pipe
@@ -483,5 +483,4 @@ class MasterProcess
     {
         $this->burst = $burst;
     }
-
 }
