@@ -10,12 +10,6 @@ abstract class AbstractWorker implements Worker
     protected $id;
 
     /**
-     * 是否存活，子类应该处理这个标记。
-     * @var bool
-     */
-    protected $alive = true;
-
-    /**
      * @var int
      */
     protected $createdAt = 0;
@@ -62,7 +56,7 @@ abstract class AbstractWorker implements Worker
     protected function signalQuitHandle()
     {
         echo "Process {$this->id} got quit signal\n";
-        $this->alive = false;
+        $this->quit();
         usleep(1000);
         exit(0);
     }
@@ -77,7 +71,7 @@ abstract class AbstractWorker implements Worker
     {
         $pid = getmypid();
         echo "Process {$pid} got terminal signal\n";
-        $this->alive = false;
+        $this->quit();
 
     }
 
@@ -106,4 +100,6 @@ abstract class AbstractWorker implements Worker
         $status = null;
         pcntl_waitpid($this->id, $status);
     }
+
+    protected abstract function quit();
 }
