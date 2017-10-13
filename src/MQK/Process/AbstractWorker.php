@@ -42,10 +42,24 @@ abstract class AbstractWorker implements Worker
             $this->id = $pid;
             return $pid;
         }
-        pcntl_signal(SIGINT, array(&$this, 'signalIntHandle'));
-        pcntl_signal(SIGQUIT, array(&$this, "signalQuitHandle"));
-        pcntl_signal(SIGTERM, array(&$this, "signalTerminalHandle"));
-//        pcntl_signal(SIGUSR1, array(&$this, "signalUsr1Handler"));
+        pcntl_signal(SIGINT, function ($signalNumber) {
+            $this->logger->info("process {$this->id} got int signal");
+            $this->quit();
+            exit(0);
+        });
+        pcntl_signal(SIGQUIT, function ($signalNumber) {
+            $this->logger->info("process {$this->id} got quit signal");
+            $this->graceFullQuit();
+        });
+        pcntl_signal(SIGTERM, function ($signalNumber) {
+            $this->logger->info("process {$this->id} got terminal signal");
+            $this->quit();
+            exit(0);
+        });
+        pcntl_signal(SIGUSR1, function ($sigalNumber) {
+            $this->logger->info("reopen logs");
+            $this->reopenLogs();
+        });
         $this->id = posix_getpid();
         $this->createdAt = time();
 
@@ -64,37 +78,19 @@ abstract class AbstractWorker implements Worker
         $this->logger->info("Worker process on {$this->id}");
     }
 
-    /**
-     * 非平滑退出进程。
-     *
-     * @return void
-     */
-    protected function signalQuitHandle()
+    protected function graceFullQuit()
     {
-        $this->logger->info("Process {$this->id} got quit signal");
-        $this->quit();
-        usleep(1000);
-        exit(0);
+
     }
 
-    /**
-     * 平滑退出进程
-     *
-     * @param int $signo
-     * @return void
-     */
-    protected function signalTerminalHandle($signo)
+    protected function reopenLogs()
     {
-        $this->logger->info("Process {$this->id} got terminal signal");
-        $this->quit();
+
     }
 
-    protected function signalIntHandle($signo)
+    protected function quit()
     {
-        $this->logger->info("Process {$this->id} got int signal");
-        $this->quit();
-        usleep(1000);
-        exit(0);
+
     }
 
     /**
@@ -123,5 +119,4 @@ abstract class AbstractWorker implements Worker
         pcntl_waitpid($this->id, $status);
     }
 
-    protected abstract function quit();
 }

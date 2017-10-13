@@ -221,13 +221,7 @@ class MasterProcess implements Master
     function signalTerminalHandle()
     {
         $this->logger->info("signal terminal handle");
-        if ($this->forceQuit) {
-            $this->logger->info("force quit");
-            $this->stop(false);
-        } else {
-            $this->forceQuit = true;
-            $this->stop(true);
-        }
+        $this->stop(false);
     }
 
     /**
@@ -438,7 +432,7 @@ class MasterProcess implements Master
         else
             $this->logger->info("application will quit");
         $this->quiting = true;
-        $signal = $graceful ? SIGTERM : SIGQUIT;
+        $signal = $graceful ? SIGQUIT : SIGTERM;
         $limit = time() + 10;
 
         $this->killall($signal);
