@@ -87,7 +87,8 @@ class MasterProcess implements Master
      */
     private $signalMappingToMethod = [
         SIGCHLD => "signalChildHandle",
-        SIGINT => "signalTerminalHandle",
+        SIGINT => "signalIntHandle",
+        SIGTERM => 'signalTerminalHandle',
         SIGTTIN => "signalIncreaseHandle",
         SIGTTOU => 'signalDecreaseHandle',
         SIGHUP => 'signalReloadHandle',
@@ -221,6 +222,12 @@ class MasterProcess implements Master
     function signalTerminalHandle()
     {
         $this->logger->info("signal terminal handle");
+        $this->stop(false);
+    }
+
+    function signalIntHandle()
+    {
+        $this->logger->info("signal int handle");
         $this->stop(false);
     }
 
@@ -447,7 +454,8 @@ class MasterProcess implements Master
             usleep(100000);
         }
 
-        $this->killall(SIGKILL);
+        if ($graceful)
+            $this->killall(SIGKILL);
 
        $this->logger->info("master process quit.");
         exit(0);
