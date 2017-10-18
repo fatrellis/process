@@ -274,7 +274,8 @@ class MasterProcess implements Master
      */
     function signalReloadHandle()
     {
-
+        $this->logger->debug('got hup signal');
+        $this->stop(true);
     }
 
     /**
