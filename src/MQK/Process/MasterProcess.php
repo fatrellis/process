@@ -104,6 +104,13 @@ class MasterProcess implements Master
         SIGQUIT => 'SIGQUIT'
     ];
 
+    /**
+     * 进程证在退出
+     *
+     * @var boolean
+     */
+    protected $quitting = false;
+
     public function __construct(
         $workerClassOrFactory,
         $processes = 5,
@@ -240,7 +247,7 @@ class MasterProcess implements Master
      */
     function signalQuitHandle()
     {
-        $this->stop(false);
+        $this->stop(true);
     }
 
     /**
@@ -275,7 +282,7 @@ class MasterProcess implements Master
     function signalReloadHandle()
     {
         $this->logger->debug('got hup signal');
-        $this->stop(true);
+        $this->reload();
     }
 
     /**
@@ -362,10 +369,12 @@ class MasterProcess implements Master
      */
     function manageWorkers()
     {
+        $this->logger->debug("manage workers");
         $workers = $this->workers;
         while ($this->processes < count($workers)) {
             $worker = array_shift($workers);
-            $this->kill($worker->id(), SIGTERM);
+            $this->logger->debug("kill {$worker->id()}");
+            $this->kill($worker->id(), SIGQUIT);
         }
     }
 
@@ -425,6 +434,20 @@ class MasterProcess implements Master
 
             unset($this->workers[$found]);
         }
+    }
+
+    /**
+     * 重启Worker
+     */
+    protected function reload()
+    {
+        for ($i = 0, $size = $this->processes; $i < $size; $i++) {
+            $worker = $this->spawnWorker();
+            $worker->start();
+            $this->workers[] = $worker;
+        }
+
+        $this->manageWorkers();
     }
 
     /**
