@@ -215,6 +215,7 @@ class MasterProcess implements Master
 
         if ($this->burst && empty($this->workers)) {
             $this->logger->info("master process will exit");
+            $this->willQuit();
             exit(0);
         }
     }
@@ -482,7 +483,8 @@ class MasterProcess implements Master
             $this->killall(SIGKILL);
 
        $this->logger->info("master process quit.");
-        exit(0);
+       $this->willQuit();
+       exit(0);
     }
 
     /**
@@ -526,5 +528,10 @@ class MasterProcess implements Master
     public function setBurst($burst)
     {
         $this->burst = $burst;
+    }
+
+    protected function willQuit()
+    {
+
     }
 }
