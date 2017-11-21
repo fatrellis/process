@@ -43,21 +43,21 @@ abstract class AbstractWorker implements Worker
             return $pid;
         }
         pcntl_signal(SIGINT, function ($signalNumber) {
-            $this->logger->info("process {$this->id} got int signal");
+            $this->logger->debug("process {$this->id} got int signal");
             $this->quit();
             exit(0);
         });
         pcntl_signal(SIGQUIT, function ($signalNumber) {
-            $this->logger->info("process {$this->id} got quit signal");
+            $this->logger->debug("process {$this->id} got quit signal");
             $this->graceFullQuit();
         });
         pcntl_signal(SIGTERM, function ($signalNumber) {
-            $this->logger->info("process {$this->id} got terminal signal");
+            $this->logger->debug("process {$this->id} got terminal signal");
             $this->quit();
             exit(0);
         });
         pcntl_signal(SIGUSR1, function ($sigalNumber) {
-            $this->logger->info("reopen logs");
+            $this->logger->debug("reopen logs");
             $this->reopenLogs();
         });
         $this->id = posix_getpid();
@@ -75,12 +75,11 @@ abstract class AbstractWorker implements Worker
      */
     public function run()
     {
-        $this->logger->info("Worker process on {$this->id}");
+        $this->logger->debug("Worker process on {$this->id}");
     }
 
     protected function graceFullQuit()
     {
-
     }
 
     protected function reopenLogs()

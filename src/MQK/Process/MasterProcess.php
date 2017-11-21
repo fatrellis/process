@@ -134,7 +134,7 @@ class MasterProcess implements Master
     {
         $this->createdAt = time();
         $pid = getmypid();
-        $this->logger->info("master process id is {$pid}");
+        $this->logger->debug("master process id is {$pid}");
         $this->spawn();
 
         $this->pipe = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
@@ -193,7 +193,7 @@ class MasterProcess implements Master
      */
     function signalHandle($signo)
     {
-        $this->logger->info("push {$this->signalNames[$signo]} to signal queue");
+        $this->logger->debug("push {$this->signalNames[$signo]} to signal queue");
         $this->signals[] = $signo;
 //        fwrite($this->pipe[0], '.');
     }
@@ -205,16 +205,16 @@ class MasterProcess implements Master
      */
     function signalChildHandle()
     {
-        $this->logger->info("signal child handle");
+        $this->logger->debug("signal child handle");
 
         $this->reap();
         if (!$this->quiting && !$this->burst) {
-            $this->logger->info("child exit and spawn worker");
+            $this->logger->debug("child exit and spawn worker");
             $this->spawn();
         }
 
         if ($this->burst && empty($this->workers)) {
-            $this->logger->info("master process will exit");
+            $this->logger->debug("master process will exit");
             $this->willQuit();
             exit(0);
         }
@@ -229,13 +229,13 @@ class MasterProcess implements Master
      */
     function signalTerminalHandle()
     {
-        $this->logger->info("signal terminal handle");
+        $this->logger->debug("signal terminal handle");
         $this->stop(false);
     }
 
     function signalIntHandle()
     {
-        $this->logger->info("signal int handle");
+        $this->logger->debug("signal int handle");
         $this->stop(false);
     }
 
@@ -318,7 +318,7 @@ class MasterProcess implements Master
             if (-1 == $pid) {
                 break;
             } else if ($pid > 0) {
-                $this->logger->info("did reape process {$pid}");
+                $this->logger->debug("did reape process {$pid}");
                 $this->removeWorkerById($pid);
                 continue;
             }
@@ -335,7 +335,7 @@ class MasterProcess implements Master
     public function spawn()
     {
         $needToStart = $this->processes - count($this->workers);
-        $this->logger->info("will start {$needToStart} processes");
+        $this->logger->debug("will start {$needToStart} processes");
         for ($i = 0; $i < $needToStart; $i++) {
             $worker = $this->spawnWorker();
             $this->didSpawnWorker($worker, $i);
@@ -460,9 +460,9 @@ class MasterProcess implements Master
     public function stop($graceful = false)
     {
         if ($graceful)
-            $this->logger->info("application will graceful quit");
+            $this->logger->debug("application will graceful quit");
         else
-            $this->logger->info("application will quit");
+            $this->logger->debug("application will quit");
         $this->quiting = true;
         $signal = $graceful ? SIGQUIT : SIGTERM;
         $limit = time() + 10;
@@ -482,7 +482,7 @@ class MasterProcess implements Master
         if ($graceful)
             $this->killall(SIGKILL);
 
-       $this->logger->info("master process quit.");
+       $this->logger->debug("master process quit.");
        $this->willQuit();
        exit(0);
     }
@@ -514,7 +514,7 @@ class MasterProcess implements Master
      */
     protected function kill($pid, $signal)
     {
-        $this->logger->info("{$signal} process {$pid}");
+        $this->logger->debug("{$signal} process {$pid}");
         if (!posix_kill($pid, $signal)) {
              $this->logger->error("{$signal} process failure {$pid}");
         }
